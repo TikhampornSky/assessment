@@ -1,28 +1,16 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
 	"log"
 	"os"
 
+	"github.com/TikhampornSky/assessment/repos"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 
 	_ "github.com/lib/pq"
 )
-
-type Err struct {
-	Message string `json:"message"`
-}
-
-type Expense struct {
-	ID     int      `json:"id"`
-	Title  string   `json:"title"`
-	Amount float64  `json:"amount"` //transfer Name --> name (ตอนรับข้อมูล)
-	Note   string   `json:"note"`
-	Tags   []string `json:"tags"`
-}
 
 // var expenses_tmp = []Expense{
 // 	{
@@ -34,43 +22,18 @@ type Expense struct {
 // 	},
 // }
 
-var db *sql.DB
-
-func InitDB() {
-	var err error
-	db, err = sql.Open("postgres", os.Getenv("DATABASE_URL"))
-	if err != nil {
-		log.Fatal("Connect to database error", err)
-	}
-
-	createTb := `
-	CREATE TABLE IF NOT EXISTS expenses (
-		id SERIAL PRIMARY KEY,
-		title TEXT,
-		amount FLOAT,
-		note TEXT,
-		tags TEXT[]
-	);`
-
-	_, err = db.Exec(createTb)
-
-	if err != nil {
-		log.Fatal("can't create table", err)
-	}
-}
-
 func main() {
-	InitDB()
+	repos.InitDB()
 
 	e := echo.New()
 
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 
-	e.GET("/expenses", getExpensesHandler)
-	e.GET("/expenses/:id", getExpenseHandler)
-	e.POST("/expenses", createExpenseHandler)
-	e.PUT("/expenses/:id", putExpenseHandler)
+	e.GET("/expenses", repos.GetExpensesHandler)
+	e.GET("/expenses/:id", repos.GetExpenseHandler)
+	e.POST("/expenses", repos.CreateExpenseHandler)
+	e.PUT("/expenses/:id", repos.PutExpenseHandler)
 
 	fmt.Println("Please use server.go for main file")
 	fmt.Println("start at port:", os.Getenv("PORT"))
