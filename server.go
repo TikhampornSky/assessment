@@ -24,15 +24,15 @@ type Expense struct {
 	Tags   []string `json:"tags"`
 }
 
-var expenses_tmp = []Expense{
-	{
-		ID:     1,
-		Title:  "strawberry smoothie",
-		Amount: 79,
-		Note:   "night market promotion discount 10 bath",
-		Tags:   []string{"food", "beverage"},
-	},
-}
+// var expenses_tmp = []Expense{
+// 	{
+// 		ID:     1,
+// 		Title:  "strawberry smoothie",
+// 		Amount: 79,
+// 		Note:   "night market promotion discount 10 bath",
+// 		Tags:   []string{"food", "beverage"},
+// 	},
+// }
 
 var db *sql.DB
 
@@ -70,6 +70,7 @@ func main() {
 	e.GET("/expenses", getExpensesHandler)
 	e.GET("/expenses/:id", getExpenseHandler)
 	e.POST("/expenses", createExpenseHandler)
+	e.PUT("/expenses/:id", putExpenseHandler)
 
 	fmt.Println("Please use server.go for main file")
 	fmt.Println("start at port:", os.Getenv("PORT"))
