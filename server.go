@@ -1,10 +1,10 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"os"
-	"database/sql"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -19,12 +19,12 @@ type Err struct {
 type Expense struct {
 	ID     int      `json:"id"`
 	Title  string   `json:"title"`
-	Amount int      `json:"amount"` //transfer Name --> name (ตอนรับข้อมูล)
+	Amount float64  `json:"amount"` //transfer Name --> name (ตอนรับข้อมูล)
 	Note   string   `json:"note"`
 	Tags   []string `json:"tags"`
 }
 
-var expenses = []Expense{
+var expenses_tmp = []Expense{
 	{
 		ID:     1,
 		Title:  "strawberry smoothie",
@@ -51,7 +51,7 @@ func InitDB() {
 		note TEXT,
 		tags TEXT[]
 	);`
-	
+
 	_, err = db.Exec(createTb)
 
 	if err != nil {
@@ -67,7 +67,8 @@ func main() {
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 
-	e.GET("/expenses", getExpenseHandler)
+	e.GET("/expenses", getExpensesHandler)
+	e.GET("/expenses/:id", getExpenseHandler)
 	e.POST("/expenses", createExpenseHandler)
 
 	fmt.Println("Please use server.go for main file")
