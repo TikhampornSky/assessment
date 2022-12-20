@@ -15,6 +15,5 @@ func createExpenseHandler(c echo.Context) error {
 	}
 
 	expenses = append(expenses, e)
-
 	return c.JSON(http.StatusCreated, e)
 }
