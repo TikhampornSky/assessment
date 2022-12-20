@@ -37,6 +37,7 @@ func main() {
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 
+	e.GET("/expenses", getExpenseHandler)
 	e.POST("/expenses", createExpenseHandler)
 
 	fmt.Println("Please use server.go for main file")
