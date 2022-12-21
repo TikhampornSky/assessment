@@ -16,16 +16,6 @@ import (
 	_ "github.com/lib/pq"
 )
 
-// var expenses_tmp = []Expense{
-// 	{
-// 		ID:     1,
-// 		Title:  "strawberry smoothie",
-// 		Amount: 79,
-// 		Note:   "night market promotion discount 10 bath",
-// 		Tags:   []string{"food", "beverage"},
-// 	},
-// }
-
 func TokenCheck(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		token := c.Request().Header.Get("Authorization")
@@ -42,13 +32,6 @@ func main() {
 	e := echo.New()
 	e.Logger.SetLevel(log.INFO)
 
-	// e.Use(middleware.BasicAuth(func(username, password string, c echo.Context) (bool, error) {
-	// 	if username == "November 10, 2009wrong_token" {
-	// 		return false, nil
-	// 	}
-	// 	return true, nil
-	// }))
-
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 
@@ -60,7 +43,7 @@ func main() {
 	fmt.Println("Please use server.go for main file")
 	fmt.Println("start at port:", os.Getenv("PORT"))
 	go func() {
-		if err := e.Start(":2565"); err != nil && err != http.ErrServerClosed { // Start server
+		if err := e.Start(os.Getenv("PORT")); err != nil && err != http.ErrServerClosed { // Start server
 			e.Logger.Fatal("shutting down the server")
 		}
 	}()
