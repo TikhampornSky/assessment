@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 
 	"github.com/TikhampornSky/assessment/repos"
@@ -22,25 +23,35 @@ import (
 // 	},
 // }
 
+func TokenCheck(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		token := c.Request().Header.Get("Authorization")
+		if token != "November 10, 2009" {
+			return c.JSON(http.StatusUnauthorized, repos.Err{Message: "Unauthorization"})
+		}
+		return next(c)
+	}
+}
+
 func main() {
 	repos.InitDB()
 
 	e := echo.New()
 
 	// e.Use(middleware.BasicAuth(func(username, password string, c echo.Context) (bool, error) {
-	// 	if username == "apidesign" || password == "45678" {
-	// 		return true, nil
+	// 	if username == "November 10, 2009wrong_token" {
+	// 		return false, nil
 	// 	}
-	// 	return false, nil
+	// 	return true, nil
 	// }))
 
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 
-	e.GET("/expenses", repos.GetExpensesHandler)
-	e.GET("/expenses/:id", repos.GetExpenseHandler)
-	e.POST("/expenses", repos.CreateExpenseHandler)
-	e.PUT("/expenses/:id", repos.PutExpenseHandler)
+	e.GET("/expenses", TokenCheck(repos.GetExpensesHandler))
+	e.GET("/expenses/:id", TokenCheck(repos.GetExpenseHandler))
+	e.POST("/expenses", TokenCheck(repos.CreateExpenseHandler))
+	e.PUT("/expenses/:id", TokenCheck(repos.PutExpenseHandler))
 
 	fmt.Println("Please use server.go for main file")
 	fmt.Println("start at port:", os.Getenv("PORT"))
