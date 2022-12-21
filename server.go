@@ -35,6 +35,8 @@ func main() {
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 
+	fmt.Println("Set up server ok")
+
 	e.GET("/expenses", TokenCheck(repos.GetExpensesHandler))
 	e.GET("/expenses/:id", TokenCheck(repos.GetExpenseHandler))
 	e.POST("/expenses", TokenCheck(repos.CreateExpenseHandler))

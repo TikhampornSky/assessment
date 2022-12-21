@@ -73,7 +73,6 @@ func GetExpenseHandler(c echo.Context) error {
 }
 
 func PutExpenseHandler(c echo.Context) error {
-	fmt.Println("Calling PutExpenseHandler")
 	id := c.Param("id")
 
 	e := Expense{}
