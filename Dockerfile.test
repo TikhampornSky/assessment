@@ -1,17 +1,21 @@
-FROM golang:1.19-alpine as build-base
+FROM golang:1.19-alpine
 
 WORKDIR /app
+RUN git clone https://github.com/TikhampornSky/assessment.git
+RUN cd assessment
+RUN go mod init nameingg
+RUN go mod tidy
 
-COPY go.mod .
+# COPY go.mod .
 
-RUN go mod download
+# RUN go mod download
 
-COPY . .
+# COPY . .
 
-RUN go build -o ./out/go-app .
+# RUN go build -o ./out/go-app .
 
-FROM alpine:3.16.2
-COPY --from=build-base /app/out/go-app /app/go-app
+# FROM alpine:3.16.2
+# COPY --from=build-base /app/out/go-app /app/go-app
 
 # CMD ["/app/go-app"]
 
