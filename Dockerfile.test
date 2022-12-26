@@ -1,29 +1,18 @@
 FROM golang:1.19-alpine
 
-WORKDIR /app
-RUN git clone https://github.com/TikhampornSky/assessment.git
-RUN cd assessment
-RUN go mod init nameingg
+# Set working directory
+WORKDIR /go/src/target
+COPY go.mod ./
+COPY go.sum ./
 RUN go mod tidy
+RUN go mod download
+COPY . ./
+# RUN go build -o /docker-go
 
-# COPY go.mod .
+# # Run tests
+# ENV DATABASE_URL postgres://mwabtxlk:x4mWGDcSX0VqkVEugDsAkXesZOAazEwF@tiny.db.elephantsql.com/mwabtxlk
+# ENV PORT :2565
 
-# RUN go mod download
-
-# COPY . .
-
-# RUN go build -o ./out/go-app .
-
-# FROM alpine:3.16.2
-# COPY --from=build-base /app/out/go-app /app/go-app
-
-# CMD ["/app/go-app"]
-
-
-# FROM golang:1.19-alpine
-
-# # Set working directory
-# WORKDIR /go/src/target
-
-# Run tests
-CMD go test -v -tags=integration
+RUN CGO_ENABLED=0 go test -c -o /foo
+CMD ["./foo"]
+# CMD ["/docker-go", "CGO_ENABLED=0 go test --tags=integration ./..."]

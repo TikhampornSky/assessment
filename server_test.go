@@ -44,7 +44,6 @@ func TestITGetGreeting(t *testing.T) {
 	reqBody := ``
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost:%d/expenses", serverPort), strings.NewReader(reqBody))
 	assert.NoError(t, err)
-	fmt.Println("-=->", req)
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Authorization", "November 10, 2009")
 	// req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
@@ -59,12 +58,9 @@ func TestITGetGreeting(t *testing.T) {
 	resp.Body.Close()
 
 	// Assertions
-	fmt.Println("==> ", req)
-	fmt.Println("--> ", resp)
 	if assert.NoError(t, err) {
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
-		fmt.Println(byteBody)
-		//assert.Equal(t, "Hello, World!", string(byteBody))			//<---
+		fmt.Println(len(string(byteBody)))
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)

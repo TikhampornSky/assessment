@@ -1,18 +1,17 @@
-FROM golang:1.19-alpine as build-base
+FROM golang:1.19-alpine
 
-WORKDIR /app
-
-COPY go.mod .
-
+# Set working directory
+WORKDIR /go/src/target
+COPY go.mod ./
+COPY go.sum ./
+RUN go mod tidy
 RUN go mod download
+COPY . ./
+RUN go build -o /docker-go
 
-COPY . .
-
-RUN CGO_ENABLED=0 go test --tags=expense -v ./...
-
-RUN go build -o ./out/go-app .
-
-FROM alpine:3.16.2
-COPY --from=build-base /app/out/go-app /app/go-app
-
-CMD ["/app/go-app"]
+# Run tests
+ENV DATABASE_URL postgres://mwabtxlk:x4mWGDcSX0VqkVEugDsAkXesZOAazEwF@tiny.db.elephantsql.com/mwabtxlk
+ENV PORT :2565
+EXPOSE 2565
+CMD ["/docker-go"]
+# CMD ["/docker-go", "CGO_ENABLED=0 go test --tags=integration ./..."]

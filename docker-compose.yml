@@ -4,7 +4,15 @@ version: '3.2'
 #   integration-test-example:
 
 services:
-  it_tests:
+  go:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    ports:
+      - "2565:2565"
+
+  go_test:
+    restart: always
     build:
       context: .
       dockerfile: ./Dockerfile.test
@@ -16,13 +24,16 @@ services:
     #   - integration-test-example
   # db:
   #   image: postgres:12.12
+  #   ports:
+  #     - "5432:5432"
+  #   expose:
+  #     - "5432"
   #   environment:
   #     POSTGRES_USER: root
   #     POSTGRES_PASSWORD: root
-  #     POSTGRES_DB: go-example-db
+  #     POSTGRES_DB: Assessment_GO_Bootcamp
   #   restart: on-failure
-  #   # volumes:
-  #   #   - ./databasesDocker:/docker-entrypoint-initdb.d/
+  #   volumes:
+  #     - ./db:/docker-entrypoint-initdb.d/
   #   networks:
   #     - integration-test-example
-    

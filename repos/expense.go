@@ -33,6 +33,7 @@ func GetExpensesHandler(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, Err{Message: "can't prepare query all expense statment:" + err.Error()})
 	}
+	fmt.Println("Calling GetExpensesHandler line 3")
 
 	rows, err := stmt.Query()
 	if err != nil {
