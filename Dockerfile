@@ -1,16 +1,22 @@
-FROM golang:1.19-alpine
+FROM golang:1.19-alpine as build-base
 
-# Set working directory
-WORKDIR /go/src/target
-COPY go.mod ./
-COPY go.sum ./
-RUN go mod tidy
+WORKDIR /app
+
+COPY go.mod .
+
 RUN go mod download
-COPY . ./
-RUN go build -o /docker-go
 
-# Run tests
+COPY . .
+
+RUN CGO_ENABLED=0 go test -v
+
+RUN go build -o ./out/go-sample .
+
+FROM alpine:3.16.2
+COPY --from=build-base /app/out/go-sample /app/go-sample
+
 ENV DATABASE_URL postgres://mwabtxlk:x4mWGDcSX0VqkVEugDsAkXesZOAazEwF@tiny.db.elephantsql.com/mwabtxlk
 ENV PORT :2565
 EXPOSE 2565
-CMD ["/docker-go"]
+
+CMD ["/app/go-sample"]

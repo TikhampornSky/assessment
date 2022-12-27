@@ -4,7 +4,7 @@ services:
   go:
     build:
       context: .
-      dockerfile: ./Dockerfile
+      dockerfile: ./Dockerfile.servertest
     ports:
       - "2565:2565"
 
