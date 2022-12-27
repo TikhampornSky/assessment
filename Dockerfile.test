@@ -13,6 +13,9 @@ COPY . ./
 # ENV DATABASE_URL postgres://mwabtxlk:x4mWGDcSX0VqkVEugDsAkXesZOAazEwF@tiny.db.elephantsql.com/mwabtxlk
 # ENV PORT :2565
 
-RUN CGO_ENABLED=0 go test -c -o /foo
-CMD ["./foo"]
-# CMD ["/docker-go", "CGO_ENABLED=0 go test --tags=integration ./..."]
+RUN CGO_ENABLED=0  go test --tags=integration -c -o /foo
+CMD ["/foo"]
+# CMD ["/docker-go", "go test --tags=integration ./..."]
+
+
+# docker-compose -f docker-compose.yml up --build --abort-on-container-exit --exit-code-from go_test
