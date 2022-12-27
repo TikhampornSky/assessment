@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"net/http"
 	"os"
@@ -27,7 +28,13 @@ func TokenCheck(next echo.HandlerFunc) echo.HandlerFunc {
 }
 
 func main() {
-	repos.InitDB()
+	//repos.InitDB()
+	db, err := sql.Open("postgres", os.Getenv("DATABASE_URL"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	h := repos.NewApplication(db)
 
 	e := echo.New()
 	e.Logger.SetLevel(log.INFO)
@@ -37,10 +44,10 @@ func main() {
 
 	fmt.Println("Set up server ok")
 
-	e.GET("/expenses", TokenCheck(repos.GetExpensesHandler))
-	e.GET("/expenses/:id", TokenCheck(repos.GetExpenseHandler))
-	e.POST("/expenses", TokenCheck(repos.CreateExpenseHandler))
-	e.PUT("/expenses/:id", TokenCheck(repos.PutExpenseHandler))
+	e.GET("/expenses", TokenCheck(h.GetExpensesHandler))
+	e.GET("/expenses/:id", TokenCheck(h.GetExpenseHandler))
+	e.POST("/expenses", TokenCheck(h.CreateExpenseHandler))
+	e.PUT("/expenses/:id", TokenCheck(h.PutExpenseHandler))
 
 	fmt.Println("Please use server.go for main file")
 	fmt.Println("start at port:", os.Getenv("PORT"))

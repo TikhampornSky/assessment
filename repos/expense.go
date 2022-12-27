@@ -9,7 +9,11 @@ import (
 	"github.com/lib/pq"
 )
 
-func CreateExpenseHandler(c echo.Context) error {
+func NewApplication(db *sql.DB) *handler {
+	return &handler{db}
+}
+
+func (h *handler) CreateExpenseHandler(c echo.Context) error {
 	fmt.Println("Calling CreateExpenseHandler")
 	e := Expense{}
 	err := c.Bind(&e)
@@ -27,7 +31,7 @@ func CreateExpenseHandler(c echo.Context) error {
 	return c.JSON(http.StatusCreated, e)
 }
 
-func GetExpensesHandler(c echo.Context) error {
+func (h *handler) GetExpensesHandler(c echo.Context) error {
 	fmt.Println("Calling GetExpensesHandler")
 	stmt, err := db.Prepare("SELECT id, title, amount, note, tags FROM expenses")
 	if err != nil {
@@ -52,7 +56,7 @@ func GetExpensesHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, expenses)
 }
 
-func GetExpenseHandler(c echo.Context) error {
+func (h *handler) GetExpenseHandler(c echo.Context) error {
 	fmt.Println("Calling GetExpenseHandler")
 	id := c.Param("id")
 	stmt, err := db.Prepare("SELECT id, title, amount, note, tags FROM expenses WHERE id = $1")
@@ -73,7 +77,7 @@ func GetExpenseHandler(c echo.Context) error {
 	}
 }
 
-func PutExpenseHandler(c echo.Context) error {
+func (h *handler) PutExpenseHandler(c echo.Context) error {
 	id := c.Param("id")
 
 	e := Expense{}
