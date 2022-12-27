@@ -24,14 +24,13 @@ const serverPort = 2565
 
 func TestITGetGreeting(t *testing.T) {
 
-	// Setup server
 	eh := echo.New()
 	go func(e *echo.Echo) {
 		e.GET("/expenses", TokenCheck(repos.GetExpensesHandler))
 		e.Start(fmt.Sprintf(":%d", serverPort))
 	}(eh)
 	for {
-		conn, err := net.DialTimeout("tcp", fmt.Sprintf("localhost:%d", serverPort), 30*time.Second)
+		conn, err := net.DialTimeout("tcp", fmt.Sprintf("go:%d", serverPort), 30*time.Second)
 		if err != nil {
 			log.Println(err)
 		}
@@ -40,16 +39,16 @@ func TestITGetGreeting(t *testing.T) {
 			break
 		}
 	}
-	// Arrange
+
 	reqBody := ``
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://localhost:%d/expenses", serverPort), strings.NewReader(reqBody))
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://go:%d/expenses", serverPort), strings.NewReader(reqBody))
 	assert.NoError(t, err)
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Authorization", "November 10, 2009")
-	// req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+
 	client := http.Client{}
 
-	// Act
+
 	resp, err := client.Do(req)
 	assert.NoError(t, err)
 
@@ -57,10 +56,10 @@ func TestITGetGreeting(t *testing.T) {
 	assert.NoError(t, err)
 	resp.Body.Close()
 
-	// Assertions
+
 	if assert.NoError(t, err) {
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
-		fmt.Println(len(string(byteBody)))
+		fmt.Println("All data length: ", len(string(byteBody)))
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)

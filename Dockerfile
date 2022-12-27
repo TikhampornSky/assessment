@@ -14,6 +14,3 @@ ENV DATABASE_URL postgres://mwabtxlk:x4mWGDcSX0VqkVEugDsAkXesZOAazEwF@tiny.db.el
 ENV PORT :2565
 EXPOSE 2565
 CMD ["/docker-go"]
-# CMD ["/docker-go", "CGO_ENABLED=0 go test --tags=integration ./..."]
-
-# docker-compose -f docker-compose.yml up --build --abort-on-container-exit --exit-code-from go_test
