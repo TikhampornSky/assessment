@@ -4,7 +4,6 @@ package repos
 
 import (
 	"database/sql"
-	"fmt"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
@@ -12,7 +11,6 @@ import (
 )
 
 func CreateExpenseHandler(c echo.Context) error {
-	fmt.Println("Calling CreateExpenseHandler")
 	e := Expense{}
 	err := c.Bind(&e)
 	if err != nil {
@@ -30,12 +28,10 @@ func CreateExpenseHandler(c echo.Context) error {
 }
 
 func GetExpensesHandler(c echo.Context) error {
-	fmt.Println("Calling GetExpensesHandler")
 	stmt, err := db.Prepare("SELECT id, title, amount, note, tags FROM expenses")
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, Err{Message: "can't prepare query all expense statment:" + err.Error()})
 	}
-	fmt.Println("Calling GetExpensesHandler line 3")
 
 	rows, err := stmt.Query()
 	if err != nil {
@@ -55,7 +51,6 @@ func GetExpensesHandler(c echo.Context) error {
 }
 
 func GetExpenseHandler(c echo.Context) error {
-	fmt.Println("Calling GetExpenseHandler")
 	id := c.Param("id")
 	stmt, err := db.Prepare("SELECT id, title, amount, note, tags FROM expenses WHERE id = $1")
 	if err != nil {

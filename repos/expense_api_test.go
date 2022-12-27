@@ -1,4 +1,4 @@
-//go:build expense
+// go:build expense
 
 package repos
 
@@ -7,26 +7,43 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"net/http/httptest"
 	"strconv"
 	"strings"
 	"testing"
 
+	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 )
 
 func seedExpense(t *testing.T) Expense {
-	var c Expense
+	var expense Expense
 	body := bytes.NewBufferString(`{
 		"title": "Sunflower Seed",
 		"amount": 11.11,
-		"note": "Pink Monday discount10%", 
-		"tags": ["food", "snack", "recommennded"]
+		"note": "Pink Monday discount10%",
+		"tags": ["food", "snack", "seed"]
 	}`)
 
-	err := request(http.MethodPost, uri("expenses"), body).Decode((&c))
+	rec := httptest.NewRecorder()
+	c := setUpTest(http.MethodPost, uri("expenses"), body, rec)
+	err := CreateExpenseHandler(c)
+
 	if err != nil {
 		t.Fatal("can't create expense!: ", err)
 	}
+	json.NewDecoder(rec.Body).Decode(&expense)
+
+	return expense
+}
+
+func setUpTest(method, url string, body io.Reader, rec *httptest.ResponseRecorder) echo.Context {
+	e := echo.New()
+	req := httptest.NewRequest(method, url, body)
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	req.Header.Add("Authorization", "November 10, 2009")
+	c := e.NewContext(req, rec)
+
 	return c
 }
 
@@ -34,72 +51,88 @@ func TestCreateExpense(t *testing.T) {
 	body := bytes.NewBufferString(`{
 		"title": "strawberry smoothie C++",
 		"amount": 79,
-		"note": "night market promotion discount 10 bath", 
+		"note": "night market promotion discount 10 bath",
 		"tags": ["food", "beverage"]
 	}`)
 
-	var e Expense
-	res := request(http.MethodPost, uri("expenses"), body)
-	err := res.Decode(&e)
+	rec := httptest.NewRecorder()
+	c := setUpTest(http.MethodPost, uri("expenses"), body, rec)
+	err := CreateExpenseHandler(c)
+
+	var expense Expense
+	json.NewDecoder(rec.Body).Decode(&expense)
 
 	assert.Nil(t, err)
-	assert.EqualValues(t, http.StatusCreated, res.StatusCode)
-	assert.NotEqual(t, 0, e.ID)
-	assert.Equal(t, "strawberry smoothie C++", e.Title)
-	assert.Equal(t, float64(79), e.Amount)
-	assert.Equal(t, "night market promotion discount 10 bath", e.Note)
-	assert.Equal(t, []string{"food", "beverage"}, e.Tags)
+	assert.EqualValues(t, http.StatusCreated, rec.Code)
+	assert.NotEqual(t, 0, expense.ID)
+	assert.Equal(t, "strawberry smoothie C++", expense.Title)
+	assert.Equal(t, float64(79), expense.Amount)
+	assert.Equal(t, "night market promotion discount 10 bath", expense.Note)
+	assert.Equal(t, []string{"food", "beverage"}, expense.Tags)
 }
 
 func TestGetAllExpenses(t *testing.T) {
-	seedExpense(t)
+	rec := httptest.NewRecorder()
+	c := setUpTest(http.MethodGet, uri("expenses"), nil, rec)
+	err := GetExpensesHandler(c)
 
 	var expense []Expense
-	res := request(http.MethodGet, uri("expenses"), nil)
-	err := res.Decode(&expense)
+	json.NewDecoder(rec.Body).Decode(&expense)
 
 	assert.Nil(t, err)
-	assert.EqualValues(t, http.StatusOK, res.StatusCode)
+	assert.EqualValues(t, http.StatusOK, rec.Code)
 	assert.Greater(t, len(expense), 0)
 }
 
 func TestGetExpenseByID(t *testing.T) {
-	c := seedExpense(t)
+	new_Expense := seedExpense(t)
 
 	var latest Expense
-	res := request(http.MethodGet, uri("expenses", strconv.Itoa(c.ID)), nil)
-	err := res.Decode(&latest)
+	rec := httptest.NewRecorder()
+
+	c := setUpTest(http.MethodGet, uri("expenses", strconv.Itoa(new_Expense.ID)), nil, rec)
+	c.SetParamNames("id")
+	c.SetParamValues(strconv.Itoa(new_Expense.ID))
+
+	err := GetExpenseHandler(c)
+
+	json.NewDecoder(rec.Body).Decode(&latest)
 
 	assert.Nil(t, err)
-	assert.Equal(t, http.StatusOK, res.StatusCode)
-	assert.Equal(t, c.ID, latest.ID)
+	assert.Equal(t, http.StatusOK, rec.Code)
+	assert.Equal(t, new_Expense.ID, latest.ID)
 	assert.Equal(t, "Sunflower Seed", latest.Title)
 	assert.Equal(t, 11.11, latest.Amount)
 	assert.Equal(t, "Pink Monday discount10%", latest.Note)
-	assert.Equal(t, []string{"food", "snack", "recommennded"}, latest.Tags)
+	assert.Equal(t, []string{"food", "snack", "seed"}, latest.Tags)
 }
 
 func TestUpdateExpenseByID(t *testing.T) {
-	c := seedExpense(t)
+	new_Expense := seedExpense(t)
 
 	body := bytes.NewBufferString(`{
 		"title": "Hamtaro Sunflower Seed",
 		"amount": 40.5,
-		"note": "Pink Monday discount10%", 
-		"tags": ["food", "snack", "recommennded"]
+		"note": "Pink Monday discount10%",
+		"tags": ["food", "snack", "putThing"]
 	}`)
 
 	var latest Expense
-	res := request(http.MethodPut, uri("expenses", strconv.Itoa(c.ID)), body)
-	err := res.Decode(&latest)
+	rec := httptest.NewRecorder()
+	c := setUpTest(http.MethodPut, uri("expenses", strconv.Itoa(new_Expense.ID)), body, rec)
+	c.SetParamNames("id")
+	c.SetParamValues(strconv.Itoa(new_Expense.ID))
+
+	err := PutExpenseHandler(c)
+	json.NewDecoder(rec.Body).Decode(&latest)
 
 	assert.Nil(t, err)
-	assert.Equal(t, http.StatusOK, res.StatusCode)
-	assert.Equal(t, c.ID, latest.ID)
+	assert.Equal(t, http.StatusOK, rec.Code)
+	assert.Equal(t, new_Expense.ID, latest.ID)
 	assert.Equal(t, "Hamtaro Sunflower Seed", latest.Title)
 	assert.Equal(t, 40.5, latest.Amount)
 	assert.Equal(t, "Pink Monday discount10%", latest.Note)
-	assert.Equal(t, []string{"food", "snack", "recommennded"}, latest.Tags)
+	assert.Equal(t, []string{"food", "snack", "putThing"}, latest.Tags)
 }
 
 func uri(paths ...string) string {
@@ -110,25 +143,4 @@ func uri(paths ...string) string {
 
 	url := append([]string{host}, paths...)
 	return strings.Join(url, "/")
-}
-
-type Response struct {
-	*http.Response
-	err error
-}
-
-func (r *Response) Decode(v interface{}) error {
-	if r.err != nil {
-		return r.err
-	}
-	return json.NewDecoder(r.Body).Decode(v)
-}
-
-func request(method, url string, body io.Reader) *Response {
-	req, _ := http.NewRequest(method, url, body)
-	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("Authorization", "November 10, 2009")
-	client := http.Client{}
-	res, err := client.Do(req)
-	return &Response{res, err}
 }

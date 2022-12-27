@@ -1,4 +1,4 @@
-//go:build expense
+// go:build expense
 
 package repos
 

@@ -2,6 +2,17 @@ FROM golang:1.19-alpine
 
 # Set working directory
 WORKDIR /go/src/target
+COPY go.mod ./
+COPY go.sum ./
+RUN go mod tidy
+RUN go mod download
+COPY . ./
+# RUN go build -o /docker-go
 
-# Run tests
-CMD CGO_ENABLED=0 go test --tags=integration ./...
+# # Run tests
+# ENV DATABASE_URL postgres://mwabtxlk:x4mWGDcSX0VqkVEugDsAkXesZOAazEwF@tiny.db.elephantsql.com/mwabtxlk
+# ENV PORT :2565
+
+RUN CGO_ENABLED=0  go test --tags=integration -c -o /foo
+CMD ["/foo"]
+# CMD ["/docker-go", "go test --tags=integration ./..."]

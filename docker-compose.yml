@@ -1,0 +1,17 @@
+version: '3.2'
+
+services:
+  go:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    ports:
+      - "2565:2565"
+
+  go_test:
+    restart: on-failure
+    build:
+      context: .
+      dockerfile: ./Dockerfile.test
+    depends_on:
+      - go
