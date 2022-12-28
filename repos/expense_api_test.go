@@ -94,7 +94,7 @@ func TestGetExpenseByID(t *testing.T) {
 	c.SetParamNames("id")
 	c.SetParamValues(strconv.Itoa(new_Expense.ID))
 
-	err := GetExpenseHandler(c)
+	err := GetExpenseByIdHandler(c)
 
 	json.NewDecoder(rec.Body).Decode(&latest)
 

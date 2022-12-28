@@ -16,16 +16,6 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func TokenCheck(next echo.HandlerFunc) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		token := c.Request().Header.Get("Authorization")
-		if token != "November 10, 2009" {
-			return c.JSON(http.StatusUnauthorized, repos.Err{Message: "Unauthorization"})
-		}
-		return next(c)
-	}
-}
-
 func main() {
 	repos.InitDB()
 
@@ -35,12 +25,23 @@ func main() {
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 
+	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			token := c.Request().Header.Get("Authorization")
+			if token != "November 10, 2009" {
+				return c.JSON(http.StatusUnauthorized, "Unauthorized")
+			}
+
+			return next(c)
+		}
+	})
+
 	fmt.Println("Set up server ok")
 
-	e.GET("/expenses", TokenCheck(repos.GetExpensesHandler))
-	e.GET("/expenses/:id", TokenCheck(repos.GetExpenseHandler))
-	e.POST("/expenses", TokenCheck(repos.CreateExpenseHandler))
-	e.PUT("/expenses/:id", TokenCheck(repos.PutExpenseHandler))
+	e.GET("/expenses", repos.GetExpensesHandler)
+	e.GET("/expenses/:id", repos.GetExpenseByIdHandler)
+	e.POST("/expenses", repos.CreateExpenseHandler)
+	e.PUT("/expenses/:id", repos.PutExpenseHandler)
 
 	fmt.Println("Please use server.go for main file")
 	fmt.Println("start at port:", os.Getenv("PORT"))

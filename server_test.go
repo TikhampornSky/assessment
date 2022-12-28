@@ -31,10 +31,10 @@ var expense_global repos.Expense
 func startServer() *echo.Echo {
 	eh := echo.New()
 	go func(e *echo.Echo) {
-		e.GET("/expenses", TokenCheck(repos.GetExpensesHandler))
-		e.POST("/expenses", TokenCheck(repos.CreateExpenseHandler))
-		e.GET("/expenses/:id", TokenCheck(repos.GetExpenseHandler))
-		e.PUT("/expenses/:id", TokenCheck(repos.PutExpenseHandler))
+		e.GET("/expenses", repos.GetExpensesHandler)
+		e.POST("/expenses", repos.CreateExpenseHandler)
+		e.GET("/expenses/:id", repos.GetExpenseByIdHandler)
+		e.PUT("/expenses/:id", repos.PutExpenseHandler)
 		e.Start(fmt.Sprintf(":%d", serverPort))
 	}(eh)
 	for {
@@ -167,7 +167,7 @@ func TestPutExpense(t *testing.T) {
 	}`)
 	req, err := http.NewRequest(http.MethodPut, fmt.Sprintf("http://go:%d/expenses/%d", serverPort, expense_global.ID), reqBody)
 	assert.NoError(t, err)
-	
+
 	resp := request(req)
 
 	var expense repos.Expense

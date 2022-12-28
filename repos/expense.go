@@ -5,6 +5,7 @@ package repos
 import (
 	"database/sql"
 	"net/http"
+	"strconv"
 
 	"github.com/labstack/echo/v4"
 	"github.com/lib/pq"
@@ -30,12 +31,12 @@ func CreateExpenseHandler(c echo.Context) error {
 func GetExpensesHandler(c echo.Context) error {
 	stmt, err := db.Prepare("SELECT id, title, amount, note, tags FROM expenses")
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, Err{Message: "can't prepare query all expense statment:" + err.Error()})
+		return c.JSON(http.StatusInternalServerError, Err{Message: "can't prepare query all expenses statment:" + err.Error()})
 	}
 
 	rows, err := stmt.Query()
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, Err{Message: "can't query all expense:" + err.Error()})
+		return c.JSON(http.StatusInternalServerError, Err{Message: "can't query all expenses:" + err.Error()})
 	}
 
 	expenses := []Expense{}
@@ -43,15 +44,18 @@ func GetExpensesHandler(c echo.Context) error {
 		e := Expense{}
 		err := rows.Scan(&e.ID, &e.Title, &e.Amount, &e.Note, pq.Array(&e.Tags))
 		if err != nil {
-			return c.JSON(http.StatusInternalServerError, Err{Message: "can't scan expense:" + err.Error()})
+			return c.JSON(http.StatusInternalServerError, Err{Message: "can't scan expenses:" + err.Error()})
 		}
 		expenses = append(expenses, e)
 	}
 	return c.JSON(http.StatusOK, expenses)
 }
 
-func GetExpenseHandler(c echo.Context) error {
-	id := c.Param("id")
+func GetExpenseByIdHandler(c echo.Context) error {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, Err{Message: "id should be int " + err.Error()})
+	}
 	stmt, err := db.Prepare("SELECT id, title, amount, note, tags FROM expenses WHERE id = $1")
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, Err{Message: "can't prepare query expense statment:" + err.Error()})
@@ -71,17 +75,19 @@ func GetExpenseHandler(c echo.Context) error {
 }
 
 func PutExpenseHandler(c echo.Context) error {
-	id := c.Param("id")
-
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, Err{Message: err.Error()})
+	}
 	e := Expense{}
-	err := c.Bind(&e)
+	err = c.Bind(&e)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, Err{Message: err.Error()})
 	}
 
-	stmt, err_update := db.Prepare("UPDATE expenses SET title = $2, amount = $3, note = $4, tags = $5 WHERE id = $1 RETURNING id")
-	if err_update != nil {
-		return c.JSON(http.StatusInternalServerError, Err{Message: "can't prepare update expense statment:" + err.Error()})
+	stmt, err := db.Prepare("UPDATE expenses SET title = $2, amount = $3, note = $4, tags = $5 WHERE id = $1 RETURNING id")
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, Err{Message: "can't prepare update expense statment:" + err.Error()})
 	}
 
 	row := stmt.QueryRow(id, e.Title, e.Amount, e.Note, pq.Array(e.Tags))
