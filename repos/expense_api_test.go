@@ -1,4 +1,4 @@
-// go:build expense
+// go:build unitAPI
 
 package repos
 
@@ -8,34 +8,15 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"strings"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/labstack/echo/v4"
+	"github.com/lib/pq"
 	"github.com/stretchr/testify/assert"
 )
-
-func seedExpense(t *testing.T) Expense {
-	var expense Expense
-	body := bytes.NewBufferString(`{
-		"title": "Sunflower Seed",
-		"amount": 11.11,
-		"note": "Pink Monday discount10%",
-		"tags": ["food", "snack", "seed"]
-	}`)
-
-	rec := httptest.NewRecorder()
-	c := setUpTest(http.MethodPost, uri("expenses"), body, rec)
-	err := CreateExpenseHandler(c)
-
-	if err != nil {
-		t.Fatal("can't create expense!: ", err)
-	}
-	json.NewDecoder(rec.Body).Decode(&expense)
-
-	return expense
-}
 
 func setUpTest(method, url string, body io.Reader, rec *httptest.ResponseRecorder) echo.Context {
 	e := echo.New()
@@ -47,113 +28,133 @@ func setUpTest(method, url string, body io.Reader, rec *httptest.ResponseRecorde
 	return c
 }
 
+func setUpDB(t *testing.T) sqlmock.Sqlmock {
+	db, mock, errMock := sqlmock.New()
+	if errMock != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", errMock)
+	}
+	SetDB(db)
+
+	return mock
+}
+
 func TestCreateExpense(t *testing.T) {
-	// db, mock,  := sqlmock.New()
 
-	// tags := expense.Tags
-	// mockedSql := "INSERT INTO expenses (title, amount, note, tags) values ($1, $2, $3, $4)  RETURNING id"
-	// mockedRow := sqlmock.NewRows([]string{"id"}).AddRow(1)
+	mock := setUpDB(t)
 
-	// mock.ExpectQuery(regexp.QuoteMeta(mockedSql)).
-	// 	WithArgs(expense.Title, expense.Amount, expense.Note, pq.Array(&tags)).
-	// 	WillReturnRows((mockedRow))
+	var data = Expense{
+		Title:  "strawberry smoothie C++",
+		Amount: 79.0,
+		Note:   "night market promotion discount 10 bath",
+		Tags:   []string{"food", "snack"},
+	}
+
+	mockedSql := "INSERT INTO expenses (title, amount, note, tags) values ($1, $2, $3, $4)"
+	mockedRow := sqlmock.NewRows([]string{"id"}).AddRow(1)
+	mock.ExpectQuery(regexp.QuoteMeta(mockedSql)).WithArgs(data.Title, data.Amount, data.Note, pq.Array(data.Tags)).WillReturnRows((mockedRow))
 
 	body := bytes.NewBufferString(`{
 		"title": "strawberry smoothie C++",
-		"amount": 79,
+		"amount": 79.0,
 		"note": "night market promotion discount 10 bath",
-		"tags": ["food", "beverage"]
+		"tags": ["food", "snack"]
 	}`)
 
 	rec := httptest.NewRecorder()
 	c := setUpTest(http.MethodPost, uri("expenses"), body, rec)
-
-	newsMockRows := sqlmock.NewRows([]string{"id", "title", "amount", "note", "tags"}).
-		AddRow("1", "test-title", "test-amount", "test-note", []string{"food", "snack", "putThing"})
-
-	db, mock, err_mock := sqlmock.New()
-	mock.ExpectQuery("SELECT (.+) FROM news_articles").WillReturnRows(newsMockRows)
-	if err_mock != nil {
-		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err_mock)
-	}
-
-	err := CreateExpenseHandler(c)
+	errCreate := CreateExpenseHandler(c)
+	assert.NoError(t, errCreate)
 
 	var expense Expense
 	json.NewDecoder(rec.Body).Decode(&expense)
 
-	assert.Nil(t, err)
 	assert.EqualValues(t, http.StatusCreated, rec.Code)
-	assert.NotEqual(t, 0, expense.ID)
-	assert.Equal(t, "strawberry smoothie C++", expense.Title)
-	assert.Equal(t, float64(79), expense.Amount)
-	assert.Equal(t, "night market promotion discount 10 bath", expense.Note)
-	assert.Equal(t, []string{"food", "beverage"}, expense.Tags)
+	assert.NotEqual(t, data.ID, expense.ID)
+	assert.Equal(t, data.Title, expense.Title)
+	assert.Equal(t, data.Amount, expense.Amount)
+	assert.Equal(t, data.Note, expense.Note)
+	assert.Equal(t, data.Tags, expense.Tags)
 }
 
-// func TestGetAllExpenses(t *testing.T) {
-// 	rec := httptest.NewRecorder()
-// 	c := setUpTest(http.MethodGet, uri("expenses"), nil, rec)
-// 	err := GetExpensesHandler(c)
+func TestGetAllExpenses(t *testing.T) {
 
-// 	var expense []Expense
-// 	json.NewDecoder(rec.Body).Decode(&expense)
+	mock := setUpDB(t)
 
-// 	assert.Nil(t, err)
-// 	assert.EqualValues(t, http.StatusOK, rec.Code)
-// 	assert.Greater(t, len(expense), 0)
-// }
+	expensesMockRows := sqlmock.NewRows([]string{"id", "title", "amount", "note", "tags"}).
+		AddRow("1", "test-title", 99.99, "test-note", pq.Array([]string{"food", "snack"}))
+	mock.ExpectPrepare("SELECT id, title, amount, note, tags FROM expenses").ExpectQuery().WillReturnRows(expensesMockRows)
 
-// func TestGetExpenseByID(t *testing.T) {
-// 	new_Expense := seedExpense(t)
+	rec := httptest.NewRecorder()
+	c := setUpTest(http.MethodGet, uri("expenses"), nil, rec)
+	err := GetExpensesHandler(c)
 
-// 	var latest Expense
-// 	rec := httptest.NewRecorder()
+	expected := "[{\"id\":1,\"title\":\"test-title\",\"amount\":99.99,\"note\":\"test-note\",\"tags\":[\"food\",\"snack\"]}]"
+	assert.Nil(t, err)
+	assert.EqualValues(t, http.StatusOK, rec.Code)
+	assert.Equal(t, expected, strings.TrimSpace(rec.Body.String()))
+}
 
-// 	c := setUpTest(http.MethodGet, uri("expenses", strconv.Itoa(new_Expense.ID)), nil, rec)
-// 	c.SetParamNames("id")
-// 	c.SetParamValues(strconv.Itoa(new_Expense.ID))
+func TestGetExpenseByID(t *testing.T) {
 
-// 	err := GetExpenseByIdHandler(c)
+	mock := setUpDB(t)
+	expensesMockRows := sqlmock.NewRows([]string{"id", "title", "amount", "note", "tags"}).
+		AddRow("1", "test-title", 99.99, "test-note", pq.Array([]string{"food", "snack"}))
+	mockedSql := "SELECT id, title, amount, note, tags FROM expenses WHERE id = $1"
+	mock.ExpectPrepare(regexp.QuoteMeta(mockedSql)).ExpectQuery().WithArgs(1).WillReturnRows(expensesMockRows)
 
-// 	json.NewDecoder(rec.Body).Decode(&latest)
+	var latest Expense
+	rec := httptest.NewRecorder()
 
-// 	assert.Nil(t, err)
-// 	assert.Equal(t, http.StatusOK, rec.Code)
-// 	assert.Equal(t, new_Expense.ID, latest.ID)
-// 	assert.Equal(t, "Sunflower Seed", latest.Title)
-// 	assert.Equal(t, 11.11, latest.Amount)
-// 	assert.Equal(t, "Pink Monday discount10%", latest.Note)
-// 	assert.Equal(t, []string{"food", "snack", "seed"}, latest.Tags)
-// }
+	c := setUpTest(http.MethodGet, uri("expenses", "1"), nil, rec)
+	c.SetParamNames("id")
+	c.SetParamValues("1")
 
-// func TestUpdateExpenseByID(t *testing.T) {
-// 	new_Expense := seedExpense(t)
+	err := GetExpenseByIdHandler(c)
 
-// 	body := bytes.NewBufferString(`{
-// 		"title": "Hamtaro Sunflower Seed",
-// 		"amount": 40.5,
-// 		"note": "Pink Monday discount10%",
-// 		"tags": ["food", "snack", "putThing"]
-// 	}`)
+	json.NewDecoder(rec.Body).Decode(&latest)
 
-// 	var latest Expense
-// 	rec := httptest.NewRecorder()
-// 	c := setUpTest(http.MethodPut, uri("expenses", strconv.Itoa(new_Expense.ID)), body, rec)
-// 	c.SetParamNames("id")
-// 	c.SetParamValues(strconv.Itoa(new_Expense.ID))
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, rec.Code)
 
-// 	err := PutExpenseHandler(c)
-// 	json.NewDecoder(rec.Body).Decode(&latest)
+	assert.Equal(t, 1, latest.ID)
+	assert.Equal(t, "test-title", latest.Title)
+	assert.Equal(t, 99.99, latest.Amount)
+	assert.Equal(t, "test-note", latest.Note)
+	assert.Equal(t, []string{"food", "snack"}, latest.Tags)
+}
 
-// 	assert.Nil(t, err)
-// 	assert.Equal(t, http.StatusOK, rec.Code)
-// 	assert.Equal(t, new_Expense.ID, latest.ID)
-// 	assert.Equal(t, "Hamtaro Sunflower Seed", latest.Title)
-// 	assert.Equal(t, 40.5, latest.Amount)
-// 	assert.Equal(t, "Pink Monday discount10%", latest.Note)
-// 	assert.Equal(t, []string{"food", "snack", "putThing"}, latest.Tags)
-// }
+func TestUpdateExpenseByID(t *testing.T) {
+	mock := setUpDB(t)
+
+	mockedSql := "UPDATE expenses SET title = $2, amount = $3, note = $4, tags = $5 WHERE id = $1"
+	mockedRow := sqlmock.NewRows([]string{"id"}).AddRow(1)
+	
+	mock.ExpectPrepare(regexp.QuoteMeta(mockedSql)).ExpectQuery().WithArgs(1, "Title", 40.5, "notess", pq.Array([]string{"food", "snack"})).WillReturnRows((mockedRow))
+
+	body := bytes.NewBufferString(`{
+        "title": "Title",
+        "amount": 40.5,
+        "note": "notess",
+        "tags": ["food", "snack"]
+    }`)
+	var latest Expense
+	rec := httptest.NewRecorder()
+	c := setUpTest(http.MethodPut, uri("expenses", "1"), body, rec)
+	c.SetParamNames("id")
+	c.SetParamValues("1")
+
+	err := PutExpenseHandler(c)
+	json.NewDecoder(rec.Body).Decode(&latest)
+
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, rec.Code)
+
+	assert.Equal(t, 1, latest.ID)
+	assert.Equal(t, "Title", latest.Title)
+	assert.Equal(t, 40.5, latest.Amount)
+	assert.Equal(t, "notess", latest.Note)
+	assert.Equal(t, []string{"food", "snack"}, latest.Tags)
+}
 
 func uri(paths ...string) string {
 	host := "http://localhost:2565"

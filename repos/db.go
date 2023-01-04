@@ -32,3 +32,7 @@ func InitDB() error {
 	}
 	return nil
 }
+
+func SetDB(dbNew *sql.DB) {
+	db = dbNew
+}

@@ -11,15 +11,7 @@ import (
 	"github.com/lib/pq"
 )
 
-type Handler struct {
-	DB *sql.DB
-}
-
-func NewApplication(db *sql.DB) *Handler {
-	return &Handler{db}
-}
-
-func (h *Handler) CreateExpenseHandler(c echo.Context) error {
+func CreateExpenseHandler(c echo.Context) error {
 	e := Expense{}
 	err := c.Bind(&e)
 	if err != nil {
@@ -36,7 +28,7 @@ func (h *Handler) CreateExpenseHandler(c echo.Context) error {
 	return c.JSON(http.StatusCreated, e)
 }
 
-func (h *Handler)GetExpensesHandler(c echo.Context) error {
+func GetExpensesHandler(c echo.Context) error {
 	stmt, err := db.Prepare("SELECT id, title, amount, note, tags FROM expenses")
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, Err{Message: "can't prepare query all expenses statment:" + err.Error()})
@@ -59,7 +51,7 @@ func (h *Handler)GetExpensesHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, expenses)
 }
 
-func (h *Handler)GetExpenseByIdHandler(c echo.Context) error {
+func GetExpenseByIdHandler(c echo.Context) error {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, Err{Message: "id should be int " + err.Error()})
@@ -82,7 +74,7 @@ func (h *Handler)GetExpenseByIdHandler(c echo.Context) error {
 	}
 }
 
-func (h *Handler)PutExpenseHandler(c echo.Context) error {
+func PutExpenseHandler(c echo.Context) error {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, Err{Message: err.Error()})
@@ -99,14 +91,14 @@ func (h *Handler)PutExpenseHandler(c echo.Context) error {
 	}
 
 	row := stmt.QueryRow(id, e.Title, e.Amount, e.Note, pq.Array(e.Tags))
-	err_scan := row.Scan(&e.ID)
+	errScan := row.Scan(&e.ID)
 
-	switch err_scan {
+	switch errScan {
 	case sql.ErrNoRows:
 		return c.JSON(http.StatusNotFound, Err{Message: "expense not found"})
 	case nil:
 		return c.JSON(http.StatusOK, e)
 	default:
-		return c.JSON(http.StatusInternalServerError, Err{Message: "can't scan expense:" + err.Error()})
+		return c.JSON(http.StatusInternalServerError, Err{Message: "can't scan expense:" + errScan.Error()})
 	}
 }
