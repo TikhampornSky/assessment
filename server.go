@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/TikhampornSky/assessment/repos"
+	"github.com/TikhampornSky/assessment/repos/expense"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"
@@ -18,6 +19,7 @@ import (
 
 func main() {
 	repos.InitDB()
+	h := repos.Handler.NewApplication()
 
 	e := echo.New()
 	e.Logger.SetLevel(log.INFO)

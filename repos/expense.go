@@ -11,7 +11,15 @@ import (
 	"github.com/lib/pq"
 )
 
-func CreateExpenseHandler(c echo.Context) error {
+type Handler struct {
+	DB *sql.DB
+}
+
+func NewApplication(db *sql.DB) *Handler {
+	return &Handler{db}
+}
+
+func (h *Handler) CreateExpenseHandler(c echo.Context) error {
 	e := Expense{}
 	err := c.Bind(&e)
 	if err != nil {
@@ -28,7 +36,7 @@ func CreateExpenseHandler(c echo.Context) error {
 	return c.JSON(http.StatusCreated, e)
 }
 
-func GetExpensesHandler(c echo.Context) error {
+func (h *Handler)GetExpensesHandler(c echo.Context) error {
 	stmt, err := db.Prepare("SELECT id, title, amount, note, tags FROM expenses")
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, Err{Message: "can't prepare query all expenses statment:" + err.Error()})
@@ -51,7 +59,7 @@ func GetExpensesHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, expenses)
 }
 
-func GetExpenseByIdHandler(c echo.Context) error {
+func (h *Handler)GetExpenseByIdHandler(c echo.Context) error {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, Err{Message: "id should be int " + err.Error()})
@@ -74,7 +82,7 @@ func GetExpenseByIdHandler(c echo.Context) error {
 	}
 }
 
-func PutExpenseHandler(c echo.Context) error {
+func (h *Handler)PutExpenseHandler(c echo.Context) error {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, Err{Message: err.Error()})
