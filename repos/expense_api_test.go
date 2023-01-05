@@ -1,4 +1,4 @@
-// go:build unitAPI
+//go:build unitAPI
 
 package repos
 
@@ -128,7 +128,7 @@ func TestUpdateExpenseByID(t *testing.T) {
 
 	mockedSql := "UPDATE expenses SET title = $2, amount = $3, note = $4, tags = $5 WHERE id = $1"
 	mockedRow := sqlmock.NewRows([]string{"id"}).AddRow(1)
-	
+
 	mock.ExpectPrepare(regexp.QuoteMeta(mockedSql)).ExpectQuery().WithArgs(1, "Title", 40.5, "notess", pq.Array([]string{"food", "snack"})).WillReturnRows((mockedRow))
 
 	body := bytes.NewBufferString(`{
